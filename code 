@@ -1,0 +1,948 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+from openpyxl import Workbook, load_workbook
+from pathlib import Path
+
+# ==============================
+# FACULTY MANAGEMENT SYSTEM
+# ==============================
+
+FILE = Path("faculty_data.xlsx")
+
+COLUMNS = [
+    "Faculty ID",
+    "Faculty Name",
+    "Department",
+    "Subject",
+    "Qualification",
+    "Contact",
+    "Email",
+    "Joining Date"
+]
+
+
+# ==============================
+# EXCEL FUNCTIONS
+# ==============================
+
+def create_excel():
+    if not FILE.exists():
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Faculty"
+        ws.append(COLUMNS)
+        wb.save(FILE)
+
+
+def get_records():
+    create_excel()
+
+    wb = load_workbook(FILE)
+    ws = wb["Faculty"]
+
+    records = []
+
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        if any(value is not None for value in row):
+            records.append(list(row))
+
+    wb.close()
+
+    return records
+
+
+def add_record(data):
+    create_excel()
+
+    wb = load_workbook(FILE)
+    ws = wb["Faculty"]
+
+    ws.append(data)
+
+    wb.save(FILE)
+    wb.close()
+
+
+def update_record(old_id, data):
+    create_excel()
+
+    wb = load_workbook(FILE)
+    ws = wb["Faculty"]
+
+    for row in range(2, ws.max_row + 1):
+
+        if str(ws.cell(row, 1).value) == str(old_id):
+
+            for col in range(1, 9):
+                ws.cell(row, col).value = data[col - 1]
+
+            wb.save(FILE)
+            wb.close()
+
+            return True
+
+    wb.close()
+    return False
+
+
+def delete_record(faculty_id):
+    create_excel()
+
+    wb = load_workbook(FILE)
+    ws = wb["Faculty"]
+
+    for row in range(2, ws.max_row + 1):
+
+        if str(ws.cell(row, 1).value) == str(faculty_id):
+
+            ws.delete_rows(row, 1)
+
+            wb.save(FILE)
+            wb.close()
+
+            return True
+
+    wb.close()
+    return False
+
+
+def id_exists(faculty_id, ignore_id=None):
+
+    for record in get_records():
+
+        current_id = str(record[0])
+
+        if current_id == str(faculty_id):
+
+            if ignore_id is None or current_id != str(ignore_id):
+                return True
+
+    return False
+
+
+# ==============================
+# MAIN APPLICATION
+# ==============================
+
+class FacultyManagementSystem:
+
+    def __init__(self, root):
+
+        self.root = root
+
+        self.root.title("Faculty Management System")
+
+        self.root.geometry("1100x700")
+
+        self.root.configure(bg="#f2f4f7")
+
+        self.selected_id = None
+
+        create_excel()
+
+        self.login_page()
+
+
+    # ==============================
+    # CLEAR SCREEN
+    # ==============================
+
+    def clear_screen(self):
+
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+
+    # ==============================
+    # LOGIN PAGE
+    # ==============================
+
+    def login_page(self):
+
+        self.clear_screen()
+
+        frame = tk.Frame(
+            self.root,
+            bg="white",
+            padx=40,
+            pady=40
+        )
+
+        frame.place(
+            relx=0.5,
+            rely=0.5,
+            anchor="center"
+        )
+
+        tk.Label(
+            frame,
+            text="Faculty Management System",
+            font=("Arial", 22, "bold"),
+            bg="white",
+            fg="#1e3a8a"
+        ).pack(pady=10)
+
+        tk.Label(
+            frame,
+            text="Login",
+            font=("Arial", 16, "bold"),
+            bg="white"
+        ).pack(pady=10)
+
+        tk.Label(
+            frame,
+            text="Username",
+            bg="white",
+            font=("Arial", 11)
+        ).pack(anchor="w")
+
+        self.username = tk.Entry(
+            frame,
+            width=35,
+            font=("Arial", 11)
+        )
+
+        self.username.pack(
+            pady=5,
+            ipady=5
+        )
+
+        tk.Label(
+            frame,
+            text="Password",
+            bg="white",
+            font=("Arial", 11)
+        ).pack(anchor="w")
+
+        self.password = tk.Entry(
+            frame,
+            width=35,
+            show="*",
+            font=("Arial", 11)
+        )
+
+        self.password.pack(
+            pady=5,
+            ipady=5
+        )
+
+        tk.Button(
+            frame,
+            text="LOGIN",
+            command=self.login,
+            bg="#2563eb",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            width=25,
+            relief="flat"
+        ).pack(pady=20)
+
+        tk.Label(
+            frame,
+            text="Username: admin   Password: admin123",
+            bg="white",
+            fg="gray"
+        ).pack()
+
+
+    # ==============================
+    # LOGIN VALIDATION
+    # ==============================
+
+    def login(self):
+
+        username = self.username.get()
+        password = self.password.get()
+
+        if username == "admin" and password == "admin123":
+
+            self.dashboard()
+
+        else:
+
+            messagebox.showerror(
+                "Login Failed",
+                "Invalid username or password!"
+            )
+
+
+    # ==============================
+    # DASHBOARD
+    # ==============================
+
+    def dashboard(self):
+
+        self.clear_screen()
+
+        # HEADER
+
+        header = tk.Frame(
+            self.root,
+            bg="#1e3a8a",
+            height=70
+        )
+
+        header.pack(fill="x")
+
+        header.pack_propagate(False)
+
+        tk.Label(
+            header,
+            text="Faculty Management System",
+            bg="#1e3a8a",
+            fg="white",
+            font=("Arial", 22, "bold")
+        ).pack(
+            side="left",
+            padx=20
+        )
+
+        tk.Button(
+            header,
+            text="Logout",
+            command=self.logout,
+            bg="#dc2626",
+            fg="white",
+            relief="flat",
+            font=("Arial", 10, "bold")
+        ).pack(
+            side="right",
+            padx=20
+        )
+
+
+        # MAIN FRAME
+
+        main = tk.Frame(
+            self.root,
+            bg="#f2f4f7"
+        )
+
+        main.pack(
+            fill="both",
+            expand=True,
+            padx=15,
+            pady=15
+        )
+
+
+        # ==============================
+        # FORM
+        # ==============================
+
+        form = tk.LabelFrame(
+            main,
+            text="Faculty Information",
+            font=("Arial", 12, "bold"),
+            bg="white",
+            padx=15,
+            pady=15
+        )
+
+        form.pack(
+            fill="x"
+        )
+
+
+        self.entries = {}
+
+        for i, field in enumerate(COLUMNS):
+
+            row = i // 4
+            col = (i % 4) * 2
+
+            tk.Label(
+                form,
+                text=field,
+                bg="white",
+                font=("Arial", 10, "bold")
+            ).grid(
+                row=row * 2,
+                column=col,
+                sticky="w",
+                padx=5,
+                pady=3
+            )
+
+            entry = tk.Entry(
+                form,
+                font=("Arial", 10)
+            )
+
+            entry.grid(
+                row=row * 2 + 1,
+                column=col,
+                columnspan=2,
+                sticky="ew",
+                padx=5,
+                pady=5,
+                ipady=4
+            )
+
+            self.entries[field] = entry
+
+
+        for i in range(8):
+            form.columnconfigure(
+                i,
+                weight=1
+            )
+
+
+        # ==============================
+        # BUTTONS
+        # ==============================
+
+        buttons = tk.Frame(
+            main,
+            bg="#f2f4f7"
+        )
+
+        buttons.pack(
+            fill="x",
+            pady=10
+        )
+
+
+        tk.Button(
+            buttons,
+            text="Add Faculty",
+            command=self.add_faculty,
+            bg="#2563eb",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief="flat",
+            padx=15,
+            pady=8
+        ).pack(side="left", padx=5)
+
+
+        tk.Button(
+            buttons,
+            text="Update",
+            command=self.update_faculty,
+            bg="#16a34a",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief="flat",
+            padx=15,
+            pady=8
+        ).pack(side="left", padx=5)
+
+
+        tk.Button(
+            buttons,
+            text="Delete",
+            command=self.delete_faculty,
+            bg="#dc2626",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief="flat",
+            padx=15,
+            pady=8
+        ).pack(side="left", padx=5)
+
+
+        tk.Button(
+            buttons,
+            text="Clear",
+            command=self.clear_form,
+            bg="#6b7280",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief="flat",
+            padx=15,
+            pady=8
+        ).pack(side="left", padx=5)
+
+
+        # ==============================
+        # SEARCH
+        # ==============================
+
+        search_frame = tk.Frame(
+            main,
+            bg="white"
+        )
+
+        search_frame.pack(
+            fill="x",
+            pady=5
+        )
+
+
+        tk.Label(
+            search_frame,
+            text="Search",
+            bg="white",
+            font=("Arial", 10, "bold")
+        ).pack(
+            side="left",
+            padx=10
+        )
+
+
+        self.search = tk.Entry(
+            search_frame,
+            font=("Arial", 10)
+        )
+
+        self.search.pack(
+            side="left",
+            fill="x",
+            expand=True,
+            padx=5,
+            pady=8,
+            ipady=4
+        )
+
+
+        tk.Button(
+            search_frame,
+            text="Search",
+            command=self.search_records,
+            bg="#2563eb",
+            fg="white",
+            relief="flat"
+        ).pack(
+            side="left",
+            padx=5
+        )
+
+
+        tk.Button(
+            search_frame,
+            text="Show All",
+            command=self.view_records,
+            bg="#374151",
+            fg="white",
+            relief="flat"
+        ).pack(
+            side="left",
+            padx=5
+        )
+
+
+        # ==============================
+        # TABLE
+        # ==============================
+
+        table_frame = tk.Frame(
+            main,
+            bg="white"
+        )
+
+        table_frame.pack(
+            fill="both",
+            expand=True
+        )
+
+
+        scrollbar = ttk.Scrollbar(
+            table_frame,
+            orient="vertical"
+        )
+
+        scrollbar.pack(
+            side="right",
+            fill="y"
+        )
+
+
+        self.table = ttk.Treeview(
+            table_frame,
+            columns=COLUMNS,
+            show="headings",
+            yscrollcommand=scrollbar.set
+        )
+
+        scrollbar.config(
+            command=self.table.yview
+        )
+
+
+        for column in COLUMNS:
+
+            self.table.heading(
+                column,
+                text=column
+            )
+
+            self.table.column(
+                column,
+                width=130
+            )
+
+
+        self.table.pack(
+            fill="both",
+            expand=True,
+            padx=5,
+            pady=5
+        )
+
+
+        self.table.bind(
+            "<<TreeviewSelect>>",
+            self.select_record
+        )
+
+
+        self.view_records()
+
+
+    # ==============================
+    # GET FORM DATA
+    # ==============================
+
+    def get_data(self):
+
+        return [
+            self.entries["Faculty ID"].get().strip(),
+            self.entries["Faculty Name"].get().strip(),
+            self.entries["Department"].get().strip(),
+            self.entries["Subject"].get().strip(),
+            self.entries["Qualification"].get().strip(),
+            self.entries["Contact"].get().strip(),
+            self.entries["Email"].get().strip(),
+            self.entries["Joining Date"].get().strip()
+        ]
+
+
+    # ==============================
+    # VALIDATION
+    # ==============================
+
+    def validate(self, data):
+
+        if any(value == "" for value in data):
+
+            messagebox.showwarning(
+                "Missing Data",
+                "Please fill all fields."
+            )
+
+            return False
+
+
+        if not data[0].isdigit():
+
+            messagebox.showwarning(
+                "Invalid ID",
+                "Faculty ID must contain numbers only."
+            )
+
+            return False
+
+
+        if not data[5].isdigit() or len(data[5]) != 10:
+
+            messagebox.showwarning(
+                "Invalid Contact",
+                "Contact number must contain 10 digits."
+            )
+
+            return False
+
+
+        if "@" not in data[6]:
+
+            messagebox.showwarning(
+                "Invalid Email",
+                "Please enter a valid email."
+            )
+
+            return False
+
+
+        return True
+
+
+    # ==============================
+    # ADD
+    # ==============================
+
+    def add_faculty(self):
+
+        data = self.get_data()
+
+        if not self.validate(data):
+            return
+
+
+        if id_exists(data[0]):
+
+            messagebox.showwarning(
+                "Duplicate ID",
+                "Faculty ID already exists."
+            )
+
+            return
+
+
+        add_record(data)
+
+        messagebox.showinfo(
+            "Success",
+            "Faculty added successfully!"
+        )
+
+        self.clear_form()
+
+        self.view_records()
+
+
+    # ==============================
+    # VIEW
+    # ==============================
+
+    def view_records(self):
+
+        for item in self.table.get_children():
+
+            self.table.delete(item)
+
+
+        for record in get_records():
+
+            self.table.insert(
+                "",
+                "end",
+                values=record
+            )
+
+
+    # ==============================
+    # SELECT
+    # ==============================
+
+    def select_record(self, event=None):
+
+        selected = self.table.selection()
+
+        if not selected:
+            return
+
+
+        values = self.table.item(
+            selected[0],
+            "values"
+        )
+
+
+        for field, value in zip(
+            COLUMNS,
+            values
+        ):
+
+            self.entries[field].delete(
+                0,
+                tk.END
+            )
+
+            self.entries[field].insert(
+                0,
+                value
+            )
+
+
+        self.selected_id = values[0]
+
+
+    # ==============================
+    # UPDATE
+    # ==============================
+
+    def update_faculty(self):
+
+        if self.selected_id is None:
+
+            messagebox.showwarning(
+                "Select Record",
+                "Please select a record first."
+            )
+
+            return
+
+
+        data = self.get_data()
+
+        if not self.validate(data):
+            return
+
+
+        if id_exists(
+            data[0],
+            self.selected_id
+        ):
+
+            messagebox.showwarning(
+                "Duplicate ID",
+                "This Faculty ID already exists."
+            )
+
+            return
+
+
+        confirm = messagebox.askyesno(
+            "Confirm Update",
+            "Do you want to update this record?"
+        )
+
+
+        if not confirm:
+            return
+
+
+        if update_record(
+            self.selected_id,
+            data
+        ):
+
+            messagebox.showinfo(
+                "Success",
+                "Faculty record updated successfully."
+            )
+
+
+        self.clear_form()
+
+        self.view_records()
+
+
+    # ==============================
+    # DELETE
+    # ==============================
+
+    def delete_faculty(self):
+
+        selected = self.table.selection()
+
+
+        if not selected:
+
+            messagebox.showwarning(
+                "Select Record",
+                "Please select a record to delete."
+            )
+
+            return
+
+
+        values = self.table.item(
+            selected[0],
+            "values"
+        )
+
+
+        faculty_id = values[0]
+
+        faculty_name = values[1]
+
+
+        confirm = messagebox.askyesno(
+            "Confirm Delete",
+            f"Are you sure you want to delete\n{faculty_name}?"
+        )
+
+
+        if not confirm:
+            return
+
+
+        if delete_record(faculty_id):
+
+            messagebox.showinfo(
+                "Deleted",
+                "Faculty record deleted successfully."
+            )
+
+
+        self.clear_form()
+
+        self.view_records()
+
+
+    # ==============================
+    # SEARCH
+    # ==============================
+
+    def search_records(self):
+
+        query = self.search.get().lower().strip()
+
+
+        for item in self.table.get_children():
+
+            self.table.delete(item)
+
+
+        if query == "":
+
+            self.view_records()
+
+            return
+
+
+        for record in get_records():
+
+            text = " ".join(
+                str(value).lower()
+                for value in record
+                if value is not None
+            )
+
+
+            if query in text:
+
+                self.table.insert(
+                    "",
+                    "end",
+                    values=record
+                )
+
+
+    # ==============================
+    # CLEAR
+    # ==============================
+
+    def clear_form(self):
+
+        for entry in self.entries.values():
+
+            entry.delete(
+                0,
+                tk.END
+            )
+
+        self.selected_id = None
+
+
+    # ==============================
+    # LOGOUT
+    # ==============================
+
+    def logout(self):
+
+        confirm = messagebox.askyesno(
+            "Logout",
+            "Are you sure you want to logout?"
+        )
+
+
+        if confirm:
+
+            self.login_page()
+
+
+# ==============================
+# START PROGRAM
+# ==============================
+
+if __name__ == "__main__":
+
+    root = tk.Tk()
+
+    app = FacultyManagementSystem(root)
+
+    root.mainloop()
